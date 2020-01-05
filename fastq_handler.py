@@ -2,8 +2,10 @@
 # -*- coding=utf-8 -*-
 
 import argparse
+import gzip
 from collections import Counter,defaultdict,namedtuple
 import numpy as np
+from prettytable import PrettyTable
 
 class Read():
     """
@@ -22,7 +24,8 @@ class Read():
         self.id = fqid
         self.seq = seq
         self.qual = [ord(q)-offset for q in qual]
-        self.counter = Counter(self.qual)
+        self.qual_counter = Counter(self.qual)
+        self.ATCG_counter = Counter(self.seq)
         self.aver_qual = np.mean(self.qual)
 
     def __len__(self):
@@ -32,14 +35,15 @@ class Read():
         base = namedtuple('base',['seq','qual'])
         return base(self.seq[idx],self.qual[idx])
 
-    def N_number(self):
-        return len([base for base in seq if base == 'N'])
+    def get_N_number(self):
+        return len([base for base in self.seq if base == 'N'])
     
-    def gc(self):
+    def get_gc_num(self):
         gc_num = [base for base in self.seq if base in ['G','g','C','c']]
         if len(self.seq) == 0: #handling ZeroDivisionError
             return 0
-        return float(gc_num) / len(self.seq)
+        # return float(gc_num) / len(self.seq)
+        return len(gc_num)
 
 def gopen(filename,mode):
     """
@@ -91,9 +95,19 @@ def main(args):
     fastq_file = args.get('fastq')
     query_len = args.get('read_length')
     BQ_query = np.zeros(query_len)
+    #initialize the stat variates
     nreads = 0
     N_numbers = 0
-    qual_class = {}
+    qual_class = defaultdict(int)
+    ATCG_stat = defaultdict(int)
+    gc_num = 0
+    # pretty table
+    basic_table = PrettyTable()
+    basic_table.field_names = ['Read Length','Reads Numbers','Base Numbers','N Numbers','GC Percent','A','T','C','G']
+    class_table = PrettyTable()
+    # position BQ table
+    bq_table = PrettyTable()
+    bq_table.field_names = ['Base Quality By Read Position']
     for read in FastqHandler(fastq_file):
         if len(read.qual) != query_len:
             print(len(read.qual))
@@ -101,11 +115,31 @@ def main(args):
             raise FastqError('Read {readid} length is not {length}'.format(
             readid = read.id,length=query_len))
         BQ_query += read.qual
-        N_numbers += read.N_number
+        N_numbers += read.get_N_number()
         nreads += 1
-        for key,value in read.counter
-    print(BQ_query)
+        gc_num += read.get_gc_num()
+        for key,value in read.qual_counter.items():
+            qual_class[key] += value
+        for key,value in read.ATCG_counter.items():
+            ATCG_stat[key] += value
+
     all_bases = nreads*query_len
+    gc_percent = round(gc_num / all_bases,3)
+    basic_table.add_row([query_len,nreads,all_bases,N_numbers,gc_percent,ATCG_stat['A'],ATCG_stat['T'],ATCG_stat['C'],ATCG_stat['G']])
+    print(basic_table)
+    #class table
+    title_list = []
+    row_list = []
+    for key,value in qual_class.items():
+        title_list.append(key)
+        row_list.append(value)
+    class_table.field_names = title_list
+    class_table.add_row(row_list)
+    print('The classification of Base Quality')
+    print(class_table)
+
+    bq_table.add_row([BQ_query])
+    print(bq_table)
     return BQ_query
 
 if __name__ == "__main__":
