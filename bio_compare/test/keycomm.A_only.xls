@@ -1,0 +1,5 @@
+Sample	Gene	Chromosome	Position	Variant_Classification	Variant_Type	Reference_Allele	Alternate_Allele	cDNA_change	AAchange	Accession	Reference_Reads	Alternate_Reads	VAF
+HYKU_008	DNMT3A	2	25463583	missense SNV	SNP	G	A	c.C2099T	p.P700L	NM_022552	444	9	0.025
+MEBI_031	DNMT3A	2	25458695	Splice Site	SNP	C	T	c.2479-1G>A	.	NM_022552	193	8	0.046
+WSFE_098	CREBBP	16	3779877	Splice Site	DEL	TGCAA	T	r.spl	.	NM_004380	274	191	0.427
+ZQZH_032	STAG2	X	123234430	frameshift insertion	INS	G	GT	c.3679_3680insT	p.G1227fs	NM_006603	9	8	0.47
